@@ -1,8 +1,6 @@
 $(window).load(() => {
-    // You need to fill all forms by corresponding fields from global "data" object 
-    console.log(data);
-
-    $("#btnFill").click(() => {
+    $("button.MuiFab-root:contains('Fill')").click(() => {
+        console.log(data);
         alert("No filling introduced yet");
-    });
+    })
 })
