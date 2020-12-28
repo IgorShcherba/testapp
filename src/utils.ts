@@ -30,3 +30,42 @@ export const setGender = (gender: string, genderFields: GenderFieldSetType) => {
 
 export const normalizeDob = (dob: string | null): string | null =>
   dob ? dayjs(dob).format("DD-MM-YYYY") : null;
+
+export const waitForElement = (selector: string) => {
+  return new Promise((resolve) => {
+    let el = $(selector)?.[0];
+    if (el) {
+      resolve(el);
+    }
+    new MutationObserver((mutationRecords, observer) => {
+      const element = $(selector)?.[0];
+      if (element) {
+        resolve(element);
+        observer.disconnect();
+      }
+    }).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  });
+};
+
+export const waitForElementToBeRemoved = (selector: string) => {
+  return new Promise((resolve) => {
+    let el = $(selector).length;
+    if (!el) {
+      resolve(el);
+    }
+    new MutationObserver((mutationRecords, observer) => {
+      const el = $(selector).length;
+      if (!el) {
+        resolve(el);
+
+        observer.disconnect();
+      }
+    }).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  });
+};

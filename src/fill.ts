@@ -4,10 +4,12 @@ import {
   getByText,
   setGender,
   normalizeDob,
+  waitForElement,
+  waitForElementToBeRemoved,
   GenderFieldSetType,
 } from "./utils";
 
-type WorkersType = {
+type WorkerType = {
   dob: string | null;
   experience: string | null;
   firstName: string | null;
@@ -17,7 +19,7 @@ type WorkersType = {
 };
 
 type DataType = {
-  workers: Array<WorkersType> | [];
+  workers: Array<WorkerType> | [];
   desc: string | null;
   email: string | null;
   firstPhone: string | null;
@@ -30,6 +32,10 @@ declare global {
     data: DataType;
   }
 }
+
+const MODAL_TITLE_SELECTOR =
+  ":contains('Check all fields before click on Save button')";
+const addBtn = getByText("Add");
 
 const { workers, desc, email, firstPhone, name, secondaryPhone } = window.data;
 
@@ -49,15 +55,14 @@ const autoFillForm = (): void => {
   setValue(inputDesc, desc?.slice?.(0, 20));
 };
 
-const workersCopy = [...workers];
+const autoFillModalForm = async (worker: WorkerType) => {
+  addBtn.click();
 
-let currentIndex = 0;
+  await waitForElement(MODAL_TITLE_SELECTOR);
 
-$(".MuiTable-root").on("DOMNodeInserted", function () {
-  currentIndex = currentIndex < workersCopy.length - 1 ? ++currentIndex : 0;
-});
+  const { dob, experience, firstName, gender, job, lastName } = worker;
+  const dateOfBirth: string | null = normalizeDob(dob);
 
-const autoFillModalForm = (): void => {
   const inputFirstName = getByLabelText("First Name");
   const inputLastName = getByLabelText("Last Name");
   const inputJob = getByLabelText("Job");
@@ -72,34 +77,28 @@ const autoFillModalForm = (): void => {
     other: inputOther,
   };
 
-  const { dob, experience, firstName, gender, job, lastName } = workersCopy[
-    currentIndex
-  ];
-
-  const dateOfBirth: string | null = normalizeDob(dob);
-
-  $(".MuiDialogContent-root").on("DOMNodeInserted", function (e) {
-    if ($(e.target).find(":contains('Work Experience (years)')").length !== 0) {
-      const inputExpirience = getByLabelText("Work Experience (years)");
-      setTimeout(() => setValue(inputExpirience, experience), 20);
-    }
-  });
-
   setValue(inputFirstName, firstName);
   setValue(inputLastName, lastName);
   setValue(inputJob, job);
   setValue(inputDoB, dateOfBirth);
   setGender(gender, genderFieldSet);
+
+  await waitForElement(":contains('Work Experience (years)')");
+  const inputExpirience = getByLabelText("Work Experience (years)");
+
+  setTimeout(() => setValue(inputExpirience, experience), 10);
+
+  return new Promise(async (resolve) => {
+    await waitForElementToBeRemoved(".MuiDialog-root");
+    resolve(null);
+  });
 };
 
-const fill = (): void => {
+const fill = async () => {
   autoFillForm();
 
-  const isModalOpened: boolean =
-    $(":contains('Check all fields before click on Save button')").length !== 0;
-
-  if (isModalOpened) {
-    autoFillModalForm();
+  for (const worker of workers) {
+    await autoFillModalForm(worker);
   }
 };
 
